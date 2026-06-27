@@ -11,6 +11,9 @@ export class Order implements IOrder {
     phone: string;
 
     @Prop({ type: String, required: false })
+    intentId?: string;
+
+    @Prop({ type: String, required: false })
     note?: string;
 
     @Prop({ type: String, required: false })

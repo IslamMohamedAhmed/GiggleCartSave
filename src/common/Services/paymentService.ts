@@ -1,10 +1,13 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
+import { Request, Response } from "express";
 import Stripe from "node_modules/stripe/esm/stripe.esm.node";
+import { OrderRepositoryService } from "../DP/orderRepositoryService";
+import { OrderStatus } from "src/Modules/order/order.interface";
 
 @Injectable()
 export class PaymentService {
     private stripe: Stripe;
-    constructor() {
+    constructor(private readonly orderRepositoryService: OrderRepositoryService) {
         this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "")
     }
 
@@ -41,7 +44,70 @@ export class PaymentService {
         let coupon = await this.stripe.coupons.create(params);
         return coupon;
     }
-    
+
+    async webhook(request: Request) {
+
+        console.log('webhook works!!');
+
+        let event = request.body;
+        // Only verify the event if you have an endpoint secret defined.
+        // Otherwise use the basic event deserialized with JSON.parse
+        const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET_KEY;
+        if (endpointSecret) {
+            // Get the signature sent by Stripe
+            const signature = request.headers['stripe-signature'];
+            if (signature) {
+                event = this.stripe.webhooks.constructEvent(
+                    request.body,
+                    signature,
+                    endpointSecret
+                );
+                if (event.type != 'checkout.session.completed') {
+                    throw new BadRequestException('Fail to pay');
+                }
+
+                await this.orderRepositoryService.updateOne({
+                    filter: {
+                        _id: event.data.object['metadata'].orderId,
+                        status: OrderStatus.pending
+                    },
+                    data: {
+                        status: OrderStatus.placed,
+                        paidAt: Date.now(),
+                    }
+                });
+            }
+        }
+
+    }
+
+    async createPaymentIntent(amount: number, currency: string = 'egp') {
+        const paymentMethod = await this.createPaymentMethod();
+        const intent = await this.stripe.paymentIntents.create({
+            amount: amount * 100,
+            currency,
+            automatic_payment_methods: {
+                enabled: true,
+                allow_redirects: 'never',
+            },
+            payment_method: paymentMethod.id,
+        });
+        return intent;
+    }
+
+    async createPaymentMethod(token: string = 'tok_visa') {
+        const paymentMethod = await this.stripe.paymentMethods.create({
+            type: 'card',
+            card: {
+                token,
+            },
+        });
+        return paymentMethod;
+    }
+
+
+
+
 }
 
 export enum paymentModes {

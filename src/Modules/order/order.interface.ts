@@ -35,6 +35,7 @@ export interface IOrder {
     subTotal: number;
     discountAmount?: number;
     finalPrice: number;
+    intentId?:string;
     paymentMethod: PaymentMethod;
     createdAt?: Date;
     updatedAt?: Date;

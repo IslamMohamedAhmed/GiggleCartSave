@@ -10,6 +10,7 @@ import { IOrderProduct, OrderStatus, PaymentMethod } from './order.interface';
 import { Types } from 'mongoose';
 import Stripe from 'node_modules/stripe/esm/stripe.esm.node';
 import { PaymentService } from 'src/common/Services/paymentService';
+import { Request, Response } from 'express';
 
 @Injectable()
 export class OrderService {
@@ -102,13 +103,15 @@ export class OrderService {
             throw new BadRequestException('In-valid order');
         }
 
-        let discounts = [{}];
+        let discounts: any = [];
         if (order.discountAmount) {
             let coupon = await this.paymentService.createCoupon({
                 percent_off: order.discountAmount,
                 duration: 'once'
             });
             discounts.push({ coupon: coupon.id });
+            console.log(discounts);
+
         }
 
         const session = await this.paymentService.checkoutSession({
@@ -130,11 +133,25 @@ export class OrderService {
             cancel_url: `${process.env.CANCEL_URL}/order/${orderId}/cancel`,
             success_url: `${process.env.SUCCESS_URL}/order/${orderId}/success`,
         });
-
+        const intent = await this.paymentService.createPaymentIntent(order.finalPrice);
+        if (intent) {
+            await this.orderRepositoryService.updateOne({
+                filter: { _id: orderId },
+                data: {
+                    intentId: intent.id
+                }
+            });
+        }
         return {
             message: 'Done',
             data: { session },
         };
+    }
+
+    async webhook(req: Request) {
+        console.log("hello naaaaaano");
+
+        return this.paymentService.webhook(req);
     }
 
 }
