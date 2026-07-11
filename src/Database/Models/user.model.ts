@@ -73,3 +73,6 @@ UserSchema.pre('save', async function (next: NextFunction) {
     if (this.isModified('password')) this.password = PasswordService.hash(this.password);
     if (this.isModified('confirmEmailOtp')) this.confirmEmailOtp = PasswordService.hash(this.confirmEmailOtp);
 });
+
+
+export const connectedUsers: Map<string, string> = new Map();

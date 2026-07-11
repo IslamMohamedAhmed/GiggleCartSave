@@ -11,13 +11,15 @@ import { Types } from 'mongoose';
 import Stripe from 'node_modules/stripe/esm/stripe.esm.node';
 import { PaymentService } from 'src/common/Services/paymentService';
 import { Request, Response } from 'express';
+import { realTimeGateway } from '../gateway/gateway';
 
 @Injectable()
 export class OrderService {
     constructor(private readonly productRepositoryService: ProductRepositoryService,
         private readonly orderRepositoryService: OrderRepositoryService,
         private readonly cartService: CartService,
-        private readonly paymentService: PaymentService
+        private readonly paymentService: PaymentService,
+        private readonly realTimeGateway: realTimeGateway
     ) { }
 
     async createOrder(user: UserDocument, body: CreateOrderDto): Promise<{ message: string, order: OrderDocument }> {
@@ -28,7 +30,7 @@ export class OrderService {
 
         let subTotal: number = 0;
         let products: IOrderProduct[] = [];
-
+        let productStockChanges: { productId: Types.ObjectId; stock: number }[] = [];
         for (const product of cart.cartItems) {
             const checkProduct = await this.productRepositoryService.findOne({
                 filter: {
@@ -55,10 +57,15 @@ export class OrderService {
 
             subTotal += totalPrice;
 
-            await this.productRepositoryService.updateOne({
-                filter: { _id: checkProduct._id },
-                data: { $inc: { stock: -product.quantity } },
-            });
+            let item = await this.productRepositoryService.updateById({
+                id: checkProduct._id,
+                data: { $inc: { stock: -product.quantity } }
+            }
+            );
+            if (item) {
+                productStockChanges.push({ productId: checkProduct._id, stock: item.stock });
+                this.realTimeGateway.emitStockChanges({ productId: item._id, stock: item.stock });
+            }
         }
 
         let finalPrice = Math.floor(subTotal * (1 - cart.discount / 100));
@@ -149,9 +156,60 @@ export class OrderService {
     }
 
     async webhook(req: Request) {
-        console.log("hello naaaaaano");
-
         return this.paymentService.webhook(req);
+    }
+
+    async cancelOrder(
+        user: UserDocument,
+        orderId: Types.ObjectId,
+    ): Promise<{ message: string }> {
+
+        let refund = {};
+        const order = await this.orderRepositoryService.findOne({
+            filter: {
+                _id: orderId,
+                createdBy: user._id,
+                status: { $in: [OrderStatus.pending, OrderStatus.placed] },
+            },
+        });
+
+        if (!order) {
+            throw new NotFoundException("Order is not found!!");
+        }
+
+        refund = { refundAmount: order.finalPrice, refundDate: Date.now() };
+
+        // Refund if card payment
+        if (order.paymentMethod === PaymentMethod.card && order.intentId) {
+            await this.paymentService.refund(order.intentId);
+        }
+
+        // Restore stock
+        for (const product of order.products) {
+            await this.productRepositoryService.updateOne({
+                filter: {
+                    _id: product._id,
+                },
+                data: {
+                    $inc: { stock: product.quantity },
+                },
+            });
+        }
+
+        // Update order status
+        await this.orderRepositoryService.updateOne({
+            filter: {
+                _id: orderId,
+            },
+            data: {
+                status: OrderStatus.cancelled,
+                updatedBy: user._id,
+                ...refund,
+                canceledAt: Date.now(),
+            },
+        });
+
+        return { message: 'Order canceled successfully' };
     }
 
 }

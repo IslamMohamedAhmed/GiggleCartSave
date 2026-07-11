@@ -107,7 +107,7 @@ export abstract class DataBaseRepository<TDocument> {
         data,
     }: {
         id: Types.ObjectId;
-        data: Partial<TDocument>;
+        data: UpdateQuery<TDocument>;
     }): Promise<TDocument | null> {
         return await this.model.findByIdAndUpdate(id, data, { new: true }).exec();
     }

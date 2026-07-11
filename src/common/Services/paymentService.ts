@@ -105,6 +105,38 @@ export class PaymentService {
         return paymentMethod;
     }
 
+    async retrievePaymentIntent(id: string): Promise<Stripe.PaymentIntent> {
+        try {
+            const paymentIntent = await this.stripe.paymentIntents.retrieve(id);
+            return paymentIntent;
+        } catch (error) {
+            throw new BadRequestException('Invalid payment intent');
+        }
+    }
+
+    async confirmPaymentIntent(id: string): Promise<Stripe.PaymentIntent> {
+        const intent = await this.retrievePaymentIntent(id);
+        if (!intent) {
+            throw new BadRequestException('Invalid intent');
+        }
+
+        const paymentIntent = await this.stripe.paymentIntents.confirm(intent.id, {
+            payment_method: 'pm_card_visa'
+        });
+
+        if (paymentIntent.status !== 'succeeded') {
+            throw new BadRequestException('Fail to confirm intent');
+        }
+
+        return paymentIntent;
+    }
+
+    async refund(id: string): Promise<Stripe.Response<Stripe.Refund>> {
+        const refund = await this.stripe.refunds.create({
+            payment_intent: id,
+        });
+        return refund;
+    }
 
 
 

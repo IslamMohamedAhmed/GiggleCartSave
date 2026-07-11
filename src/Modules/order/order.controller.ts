@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, Req, Res, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Param, Patch, Post, Req, Res, UsePipes, ValidationPipe } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { Auth } from 'src/common/Custom-Decorators/auth.decorator';
 import { RoleTypes, type UserDocument } from 'src/Database/Models/user.model';
@@ -12,14 +12,14 @@ import type { Request, Response } from 'express';
 @Controller('order')
 export class OrderController {
   constructor(private readonly orderService: OrderService) { }
- 
+
 
   @Post()
   @Auth([RoleTypes.admin, RoleTypes.superadmin, RoleTypes.user])
   async createOrder(@User() user: UserDocument, @Body() body: CreateOrderDto): Promise<{ message: string, order: OrderDocument }> {
     return this.orderService.createOrder(user, body);
   }
-  
+
   @Post('webhook')
   async webhook(@Req() req: Request) {
     return this.orderService.webhook(req);
@@ -35,7 +35,12 @@ export class OrderController {
   }
 
 
- 
+  @Patch(':orderId/cancel')
+  @Auth([RoleTypes.admin, RoleTypes.superadmin, RoleTypes.user])
+  async cancelOrder(@User() user: UserDocument, @Param() param: orderIdDto): Promise<{ message: string }> {
+    return this.orderService.cancelOrder(user, param.orderId);
+  }
+
 
 
 }

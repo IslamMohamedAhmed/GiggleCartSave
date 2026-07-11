@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
-import { RoleTypes } from 'src/Database/Models/user.model';
+import { RoleTypes, UserDocument } from 'src/Database/Models/user.model';
 
 @Injectable()
 export class AuthorizationGuard implements CanActivate {
@@ -10,13 +10,23 @@ export class AuthorizationGuard implements CanActivate {
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
 
-    let role: RoleTypes = context.switchToHttp().getRequest().user.role;
+    let user: UserDocument | undefined;
     const requiredRoles = this.reflector
       .getAllAndOverride<RoleTypes[]>('roles', [context.getHandler(), context.getClass()]);
-     
 
-    if (!requiredRoles?.includes(role)) {
-      throw new ForbiddenException('unauthorized account!!');
+    switch (context['contextType']) {
+      case 'ws':
+        user = context.switchToWs().getClient().user;
+        break;
+      case 'http':
+        user = context.switchToHttp().getRequest().user;
+        break;
+      default:
+        break;
+    }
+
+    if (!user || !requiredRoles?.includes(user.role)) {
+      return false;
     }
 
     return true;

@@ -46,6 +46,12 @@ export class Order implements IOrder {
     subTotal: number;
 
     @Prop({ type: Number, required: false })
+    refundAmount: number;
+
+    @Prop({ type: Date, required: false })
+    refundDate: Date;
+
+    @Prop({ type: Number, required: false })
     discountAmount?: number;
 
     @Prop({ type: Number, required: true })

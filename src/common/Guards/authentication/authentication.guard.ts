@@ -9,16 +9,27 @@ export class AuthenticationGuard implements CanActivate {
     context: ExecutionContext,
   ): Promise<boolean> {
 
-    const { authorization } = context.switchToHttp().getRequest().headers;
-    if (!authorization) {
-      throw new UnauthorizedException('Missing token');
+    let authorization: string = "";
+
+    switch (context['contextType']) {
+      case 'ws':
+        authorization = context.switchToWs().getClient().handshake?.auth?.authorization ||
+          context.switchToWs().getClient().handshake?.headers?.authorization;
+        console.log({ client: authorization });
+        context.switchToWs().getClient().user = await this.TokenService.verifyToken({ authorization });
+        break;
+      case 'http':
+        authorization = context.switchToHttp().getRequest().headers.authorization;
+        console.log(authorization);
+        context.switchToHttp().getRequest().user = await this.TokenService.verifyToken({ authorization });
+        break;
+      default:
+        break;
     }
-    context.switchToHttp().getRequest().user =await this.TokenService.verifyToken({
-      authorization: authorization,
-    });
 
-
-    
+    if (!authorization) {
+      return false;
+    }
 
     return true;
   }

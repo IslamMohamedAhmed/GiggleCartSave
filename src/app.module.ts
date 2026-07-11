@@ -13,6 +13,7 @@ import { CartModule } from './Modules/cart/cart.module';
 import { CouponModule } from './Modules/coupon/coupon.module';
 import { ReviewModule } from './Modules/review/review.module';
 import { OrderModule } from './Modules/order/order.module';
+import { GatewayModule } from './Modules/gateway/gateway.module';
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { OrderModule } from './Modules/order/order.module';
     CouponModule,
     ReviewModule,
     OrderModule,
-    GlobalAuthenticationModuleTsModule
+    GlobalAuthenticationModuleTsModule,
+    GatewayModule
   ],
   controllers: [AppController],
   providers: [AppService],
