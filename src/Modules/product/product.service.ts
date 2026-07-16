@@ -165,6 +165,12 @@ export class ProductService {
         return this.ProductRepositoryService.find({ filter, populate: query?.populate, select: query?.select, sort: query?.sort, page: query?.page, limit: query?.limit });
     }
 
+    async findAllCached(): Promise<IProduct[] | IPaginate<IProduct>> {
+        console.log("yo, islam");
+        
+        return this.ProductRepositoryService.find({});
+    }
+
     private calculateFinalPrice(originalPrice: number, discount?: number): number {
         if (originalPrice <= 0) {
             throw new BadRequestException('invalid "original price"')

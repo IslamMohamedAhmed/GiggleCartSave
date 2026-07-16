@@ -14,11 +14,24 @@ import { CouponModule } from './Modules/coupon/coupon.module';
 import { ReviewModule } from './Modules/review/review.module';
 import { OrderModule } from './Modules/order/order.module';
 import { GatewayModule } from './Modules/gateway/gateway.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import KeyvRedis, { Keyv } from '@keyv/redis';
+import { KeyvCacheableMemory } from 'cacheable';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath: './Config/.env.dev', isGlobal: true }),
     MongooseModule.forRoot(process.env.db_url ?? ""),
+    CacheModule.registerAsync({
+      useFactory: async () => {
+        return {
+          stores: [
+            new KeyvRedis('redis://localhost:6379'),
+          ],
+        };
+      },
+      isGlobal: true,
+    }),
     UserModule,
     ProductModule,
     CategoryModule,

@@ -13,6 +13,7 @@ import { validationFileOptions } from 'src/common/file-validation/validation.fil
 import { ProductQueryDto } from './productDtos/product.query.dto';
 import { IPaginate } from 'src/common/DP/repository.dp';
 import { IProduct } from './product.interface';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 
 @Controller('product')
 export class ProductController {
@@ -51,4 +52,14 @@ export class ProductController {
   async findAll(@Query() query: ProductQueryDto): Promise<IProduct[] | IPaginate<IProduct>> {
     return await this.productService.findAll(query);
   }
+
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(5000)
+  @Get('allCached')
+  async findAllCached(): Promise<IProduct[] | IPaginate<IProduct>> {
+    return await this.productService.findAllCached();
+  }
+
+
+
 }
