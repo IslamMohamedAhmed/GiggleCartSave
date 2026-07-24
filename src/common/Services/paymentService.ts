@@ -47,8 +47,6 @@ export class PaymentService {
 
     async webhook(request: Request) {
 
-        console.log('webhook works!!');
-
         let event = request.body;
         // Only verify the event if you have an endpoint secret defined.
         // Otherwise use the basic event deserialized with JSON.parse

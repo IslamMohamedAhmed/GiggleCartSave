@@ -32,8 +32,6 @@ export class CartService {
                 let totalPrice = cartItem.quantity * cartItem.price;
                 let discount = 0;
 
-                console.log(totalPrice);
-
                 let totalPriceAfterDiscount = totalPrice * (1 - (discount / 100));
                 let cart = await this.cartRepositoryService
                     .create({
@@ -65,11 +63,8 @@ export class CartService {
             cartExist.totalPrice = cartExist.cartItems.reduce((acc, item) => {
                 return acc + (item.quantity * item.price);
             }, 0);
-            console.log(cartExist.totalPrice);
 
             if (cartExist.discount >= 0) {
-                console.log("hello");
-
                 cartExist.totalPriceAfterDiscount = cartExist.totalPrice * (1 - (cartExist.discount / 100));
             }
             await cartExist.save();

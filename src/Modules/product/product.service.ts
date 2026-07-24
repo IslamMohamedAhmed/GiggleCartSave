@@ -166,8 +166,6 @@ export class ProductService {
     }
 
     async findAllCached(): Promise<IProduct[] | IPaginate<IProduct>> {
-        console.log("yo, islam");
-        
         return this.ProductRepositoryService.find({});
     }
 

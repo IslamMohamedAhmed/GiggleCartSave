@@ -117,7 +117,6 @@ export class OrderService {
                 duration: 'once'
             });
             discounts.push({ coupon: coupon.id });
-            console.log(discounts);
 
         }
 

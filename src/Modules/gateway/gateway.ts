@@ -23,35 +23,27 @@ export class realTimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     constructor(private readonly TokenService: TokenService) { }
 
     afterInit(server: Server) {
-        console.log('WebSocket server initialized');
     }
 
     async handleConnection(client: Socket): Promise<void> {  // Fixed: 'viod' → 'void'
         try {
-            console.log(client);
             const authorization = this.destructAuthorization(client);
-            console.log({ authorization });
             const user = await this.TokenService.verifyToken({ authorization });
-            console.log({ user });
             client['user'] = user;
             connectedUsers.set(user._id.toString(), client.id);
-            console.log({ connectedUsers });  // Fixed: 'log' → 'console.log'
         } catch (error) {
             client.emit('exception', error?.message || 'fail to connect');
         }
     }
 
     handleDisconnect(client: IAuthSocket) {
-        console.log({ c: client['user'] });
         connectedUsers.delete(client.user._id.toString());
-        console.log(`Client disconnected ${client.id}`);  // Fixed: Template literal syntax
     }
 
     @Auth([RoleTypes.user, RoleTypes.admin, RoleTypes.superadmin])
     @SubscribeMessage('sayHi')
     sayHi(@MessageBody() data: any, @ConnectedSocket() socket: Socket): void {
         try {
-            console.log(data);
             socket.emit('sayHi', { message: 'Hello from server Nest to postman!' });
         }
         catch (err) {

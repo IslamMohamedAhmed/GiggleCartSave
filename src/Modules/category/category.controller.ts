@@ -38,8 +38,6 @@ export class CategoryController {
     @Param() params: categoryParamsIdDto,
     @UploadedFile() file: Express.Multer.File)
     : Promise<{ message: string }> {
-    console.log(params);
-
     return await this.categoryService.updateCategory(user, params.categoryId, body, file);
   }
 
