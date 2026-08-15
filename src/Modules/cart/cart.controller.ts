@@ -1,12 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Put, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UsePipes, ValidationPipe } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { Auth } from 'src/common/Custom-Decorators/auth.decorator';
 import { RoleTypes, type UserDocument } from 'src/Database/Models/user.model';
 import { User } from 'src/common/Custom-Decorators/user.decorator';
 import { addToCartDto, updateProductQuantityDto } from './CartDtos/addToCart.dto';
-import { CartDocument } from 'src/Database/Models/cart.model';
+import { CartDocument, ICartItems } from 'src/Database/Models/cart.model';
 import { removeFromCartDto } from './CartDtos/removeFromCart.dto';
 import { applyCouponDto } from './CartDtos/applyCoupon.dto';
+import { wishlistOperationsDto } from '../wishlist/wishlistDto/wishlistOperations.dto';
+import { Types } from 'mongoose';
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, stopAtFirstError: true }))
 @Auth([RoleTypes.admin, RoleTypes.superadmin, RoleTypes.user])
 @Controller('cart')
@@ -43,6 +45,15 @@ export class CartController {
   async applyCoupon(@User() user: UserDocument, @Body() body: applyCouponDto): Promise<{ message: string, cart: CartDocument }> {
     return this.cartService.applyCoupon(user, body);
   }
+
+  @Post('move-to-wishlist')
+  async moveToWishlist(@User() user: UserDocument, @Body() body: wishlistOperationsDto): Promise<{
+    message: string, wishlist: Types.ObjectId[],
+    cart: ICartItems[] | [] | CartDocument
+  }> {
+    return this.cartService.moveToWishlist(user, body);
+  }
+
 
 
 

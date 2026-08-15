@@ -1,19 +1,24 @@
 import { CartRepositoryService } from 'src/common/DP/cartRepositoryService';
 import { ProductRepositoryService } from './../../common/DP/productRepositoryService';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { UserDocument } from 'src/Database/Models/user.model';
-import { CartDocument } from 'src/Database/Models/cart.model';
+import { CartDocument, ICartItems } from 'src/Database/Models/cart.model';
 import { removeFromCartDto } from './CartDtos/removeFromCart.dto';
 import { addToCartDto, updateProductQuantityDto } from './CartDtos/addToCart.dto';
 import { applyCouponDto } from './CartDtos/applyCoupon.dto';
 import { CouponRepositoryService } from 'src/common/DP/couponRepositoryService';
+import { wishlistOperationsDto } from '../wishlist/wishlistDto/wishlistOperations.dto';
+import { Types } from 'mongoose';
+import { WishlistService } from '../wishlist/wishlist.service';
 
 @Injectable()
 export class CartService {
 
     constructor(private readonly productRepositoryService: ProductRepositoryService,
         private readonly cartRepositoryService: CartRepositoryService,
-        private readonly couponRepository: CouponRepositoryService
+        private readonly couponRepository: CouponRepositoryService,
+        @Inject(forwardRef(() => WishlistService))
+        private readonly wishlistService: WishlistService
     ) { }
 
     async addToCart(user: UserDocument, body: addToCartDto): Promise<{ message: string, cart: CartDocument }> {
@@ -163,6 +168,21 @@ export class CartService {
             throw new NotFoundException('coupon is not found!!');
         }
 
+    }
+
+    async moveToWishlist(user: UserDocument, body: wishlistOperationsDto): Promise<{
+        message: string, wishlist: Types.ObjectId[],
+        cart: ICartItems[] | [] | CartDocument
+    }> {
+        let product = await this.productRepositoryService.findById({ id: body.productId });
+        if (!product) throw new NotFoundException('product not found');
+        const cart = await this.cartRepositoryService.findOne({ filter: { user: user._id } });
+        if (!cart) throw new NotFoundException('user cart is empty');
+        if (!cart.cartItems.some(item => item.product.equals(product._id))) throw new NotFoundException('product is not in cart');
+        this.removeFromCart(user, { productId: product._id });
+        await this.wishlistService.addToWishlist(user, { productId: product._id });
+        await user.save();
+        return { message: 'product was moved successfully from cart to wishlist', wishlist: user.wishlist, cart: cart.cartItems };
     }
 
 

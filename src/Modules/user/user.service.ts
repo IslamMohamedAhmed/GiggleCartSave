@@ -71,6 +71,34 @@ export class UserService {
     return { message: 'Done', data: { accessToken, refreshToken } };
   }
 
+  async changePassword(user: UserDocument, oldPassword: string, newPassword: string) {
+    if (!PasswordService.compare(oldPassword, user.password)) throw new BadRequestException("Invalid old password");
+    user.password = PasswordService.hash(newPassword);
+    await this.userRepositoryService.updateOne({ filter: { _id: user._id }, data: { password: user.password } });
+    return { message: "Password changed successfully" };
+  }
+
+  async requestResetPassword(email: string) {
+    const user = await this.userRepositoryService.findOne({ filter: { email } });
+    if (!user) throw new NotFoundException("User not found");
+    const otp = this.generateOTP();
+    await this.userRepositoryService.updateOne({ filter: { email }, data: { resetPasswordOtp: otp } });
+    this.mailService.sendMail({
+      to: email,
+      subject: "Reset your password - GiggleCart",
+      html: createTemplate(otp)
+    });
+    return { message: "Check your email for the password reset OTP" };
+  }
+
+  async resetPassword(email: string, otp: string, newPassword: string) {
+    const user = await this.userRepositoryService.findOne({ filter: { email, resetPasswordOtp: otp } });
+    if (!user) throw new NotFoundException("User not found or invalid OTP");
+    user.password = PasswordService.hash(newPassword);
+    await this.userRepositoryService.updateOne({ filter: { email }, data: { password: user.password, resetPasswordOtp: undefined } });
+    return { message: "Password reset successfully" };
+  }
+
   private generateOTP() {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }

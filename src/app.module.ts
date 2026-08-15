@@ -17,6 +17,7 @@ import { GatewayModule } from './Modules/gateway/gateway.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import KeyvRedis, { Keyv } from '@keyv/redis';
 import { KeyvCacheableMemory } from 'cacheable';
+import { WishlistModule } from './Modules/wishlist/wishlist.module';
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { KeyvCacheableMemory } from 'cacheable';
       useFactory: async () => {
         return {
           stores: [
-            new KeyvRedis('redis://localhost:6379'),
+            new KeyvRedis(process.env.REDIS_URL),
           ],
         };
       },
@@ -42,7 +43,8 @@ import { KeyvCacheableMemory } from 'cacheable';
     ReviewModule,
     OrderModule,
     GlobalAuthenticationModuleTsModule,
-    GatewayModule
+    GatewayModule,
+    WishlistModule
   ],
   controllers: [AppController],
   providers: [AppService],

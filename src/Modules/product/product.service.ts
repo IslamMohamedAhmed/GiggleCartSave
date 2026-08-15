@@ -176,4 +176,5 @@ export class ProductService {
         let price = originalPrice * (1 - (discount || 0) / 100);
         return price > 0 ? price : 0;
     }
+    
 }

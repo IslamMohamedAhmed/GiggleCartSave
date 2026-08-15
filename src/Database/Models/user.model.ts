@@ -1,6 +1,6 @@
-import { MongooseModule, Prop, Schema, SchemaFactory, Virtual } from "@nestjs/mongoose";
+import { MongooseModule, Prop, raw, Schema, SchemaFactory, Virtual } from "@nestjs/mongoose";
 import { NextFunction } from "express";
-import { HydratedDocument } from "mongoose";
+import { HydratedDocument, Types } from "mongoose";
 import { PasswordService } from "src/common/Services/passwordService";
 
 export enum GenderTypes {
@@ -62,6 +62,9 @@ export class User {
 
     @Prop({ type: String, enum: RoleTypes, default: RoleTypes.user })
     role: RoleTypes;
+
+    @Prop([{ type: Types.ObjectId, ref: 'Product' }])
+    wishlist: Types.ObjectId[];
 }
 export type UserDocument = HydratedDocument<User>;
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -12,12 +12,13 @@ import { CouponModel } from 'src/Database/Models/coupon.model';
 import { CouponRepositoryService } from 'src/common/DP/couponRepositoryService';
 import { PaymentService } from 'src/common/Services/paymentService';
 import { realTimeGateway } from '../gateway/gateway';
+import { CartModule } from '../cart/cart.module';
 
 @Module({
-  imports: [OrderModel, ProductModel, CartModel, CouponModel],
+  imports: [OrderModel, ProductModel, CartModel, CouponModel, CartModule],
   controllers: [OrderController],
   providers: [OrderService, OrderRepositoryService,
     ProductRepositoryService,
-    CartRepositoryService, CartService, CouponRepositoryService, PaymentService, realTimeGateway],
+    CartRepositoryService, CouponRepositoryService, PaymentService, realTimeGateway],
 })
 export class OrderModule { }
